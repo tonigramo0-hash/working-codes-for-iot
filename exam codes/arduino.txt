@@ -1,0 +1,86 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+const char* ssid="Glory-Academy";
+const char* password="Glory@2022";
+
+
+String servername="http://10.10.5.91/toni/save.php";
+#define trig 13
+#define echo 12
+#define green 14
+#define red 27
+#define yellow 35
+#define buzz 26
+
+float distance;
+long duration;
+String status;
+
+void setup(){
+Serial.begin(9600);
+WiFi.begin(ssid,password);
+Serial.print("connecting");
+while(WiFi.status() != WL_CONNECTED){
+  Serial.print(".");
+  delay(500);
+}
+Serial.print("");
+Serial.print("connected");
+
+pinMode(red,OUTPUT);
+pinMode(yellow,OUTPUT);
+pinMode(green,OUTPUT);
+pinMode(trig,OUTPUT);
+pinMode(buzz,OUTPUT);
+pinMode(echo,INPUT);
+
+}
+
+void loop(){
+  digitalWrite(trig,LOW);
+  delayMicroseconds(2);
+  digitalWrite(trig,HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig,LOW);
+  
+  duration=pulseIn(echo,HIGH);
+  distance=duration*0.034/2;
+
+  Serial.print("distance=");
+  Serial.print(distance);
+  Serial.println("cm");
+
+
+  digitalWrite(red,LOW);
+  digitalWrite(yellow,LOW);
+  digitalWrite(green,LOW);
+  digitalWrite(buzz,LOW);
+
+  if(distance > 0 && distance <= 20){  
+    digitalWrite(red,HIGH);
+    digitalWrite(buzz,HIGH);
+    status="INTRUSION_DETECTED";
+    Serial.print("status=");
+    Serial.println(status);
+  }
+  else {
+    digitalWrite(red, LOW);
+    digitalWrite(buzz, LOW);
+    status="CLEAR";
+  }
+
+  if(WiFi.status() == WL_CONNECTED){
+    HTTPClient http;
+   
+    String url= servername + "?distance="+String(distance) +"&status="+status;
+     http.begin(url);
+     int responsecode=http.GET();
+     Serial.print("responsecode=");
+     Serial.println(responsecode);
+
+     http.end();
+
+  }
+delay(3000);
+}
